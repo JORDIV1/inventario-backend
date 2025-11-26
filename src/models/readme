@@ -1,0 +1,5 @@
+Cliente → Entidad: Producto.fromJSON(req.body)
+BD → Entidad: Producto.fromRow(row)
+PATCH: actual.withPatch(req.body) → nueva entidad validada
+Guardar: repo.update(id, entidad.toRow())
+Responder: res.json(entidad.toDTO())
