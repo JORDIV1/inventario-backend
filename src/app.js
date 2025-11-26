@@ -18,31 +18,22 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://frontend-vercel-iota.vercel.app",
-  "https://frontend-inventario-mulb-ggwh1q92x-jordiv1s-projects.vercel.app",
-];
-
 const corsOptions = {
-  origin(origin, cb) {
-    console.log("[CORS] Origin recibido:", origin);
+  origin: (origin, cb) => {
+    const allowedOrigin = process.env.FRONTEND_ORIGIN;
 
-    // Peticiones tipo Postman / curl / healthcheck (sin Origin)
     if (!origin) return cb(null, true);
 
-    if (allowedOrigins.includes(origin)) {
-      console.log("[CORS] Origin PERMITIDO:", origin);
+    if (origin === allowedOrigin || origin === "http://localhost:5173") {
       return cb(null, true);
     }
 
-    console.log("[CORS] Origin NO permitido:", origin);
-    // No tiramos error, solo no añadimos headers CORS
-    return cb(null, false);
+    cb(new Error("CORS_ORIGIN_NOT_ALLOWED"));
   },
   credentials: true,
 };
 
+app.use(cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.use("/auth", authRouter);
