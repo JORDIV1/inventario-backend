@@ -17,23 +17,21 @@ app.use(helmet());
 app.use(express.json());
 
 app.use(cookieParser());
+const ALLOWED_ORIGINS = [
+  "https://www.gestioncom.org",
+  "https://gestioncom.org",
+  "http://localhost:5173",
+];
 
 const corsOptions = {
   origin: (origin, cb) => {
-    const allowedOrigin = process.env.FRONTEND_ORIGIN;
-
     if (!origin) return cb(null, true);
-
-    if (origin === allowedOrigin || origin === "http://localhost:5173") {
-      return cb(null, true);
-    }
-
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error("CORS_ORIGIN_NOT_ALLOWED"));
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.use("/auth", authRouter);
