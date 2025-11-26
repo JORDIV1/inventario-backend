@@ -25,8 +25,14 @@ const ALLOWED_ORIGINS = [
 
 const corsOptions = {
   origin: (origin, cb) => {
+    console.log("[CORS] Origin recibido:", origin);
     if (!origin) return cb(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      console.log("[CORS] Origin permitido ✅:", origin);
+      return cb(null, true);
+    }
+
+    console.log("[CORS] Origin bloqueado ❌:", origin);
     cb(new Error("CORS_ORIGIN_NOT_ALLOWED"));
   },
   credentials: true,
