@@ -1,4 +1,4 @@
-// backend/src/app.js
+
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -9,6 +9,7 @@ import { authRouter } from "./routes/auth.routes.js";
 import { productoRouter } from "./routes/producto.routes.js";
 import { categoriaRouter } from "./routes/categoria.routes.js";
 import { usuarioRouter } from "./routes/user.routes.js";
+import { movimientoRouter } from "./routes/movimiento.routes.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(cors(corsOptions));
 
 app.use("/auth", authRouter);
 app.use("/productos", productoRouter);
+app.use("/movimientos", movimientoRouter);
 app.use("/categorias", categoriaRouter);
 app.use("/usuarios", usuarioRouter);
 

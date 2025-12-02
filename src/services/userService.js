@@ -1,6 +1,6 @@
 import argon2 from "argon2";
 import { Usuario } from "../models/user.js";
-const EMAIL_REGEX = /^[^\s,@]+@[^\s,@]+\.[^\s,@]+$/;
+const EMAIL_REGEX = /^[^\s,@]+@[^\s,@]+(\.[^\s,@]+)+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
 const ROLES = new Set([1, 2]);
 export class UserService {
@@ -132,6 +132,9 @@ export class UserService {
     try {
       affected = await this.repo.remove(id);
     } catch (err) {
+      if (err?.code === "ER_ROW_IS_REFERENCED_2") {
+        throw new Error("USER_IN_USE");
+      }
       throw new Error("USER_REPO_UNAVAILABLE");
     }
     if (!affected) return false;

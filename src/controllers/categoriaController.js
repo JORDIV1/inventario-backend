@@ -25,7 +25,6 @@ export class CategoriaController {
   }
   async create(req, res) {
     try {
-      console.log(req.body?.nombre);
       const nombre = String(req.body?.nombre ?? "").trim();
 
       if (!nombre) return res.status(400).json({ ok: false, error: "CATEGORY_NAME_REQUIRED" });

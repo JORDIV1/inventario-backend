@@ -8,11 +8,6 @@ export class CategoriaService {
    */
   constructor(repo) {
     this.repo = repo;
-    this.create = this.create.bind(this);
-    this.getById = this.getById.bind(this);
-    this.list = this.list.bind(this);
-    this.patch = this.patch.bind(this);
-    this.remove = this.remove.bind(this);
   }
 
   async create(dto = {}) {

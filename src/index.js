@@ -1,4 +1,3 @@
-// backend/src/index.js
 import "dotenv/config"; // lee .env
 import app from "./app.js";
 

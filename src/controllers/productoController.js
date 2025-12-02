@@ -34,6 +34,9 @@ export class ProductoController {
     this.getById = this.getById.bind(this);
     this.update = this.update.bind(this);
     this.remove = this.remove.bind(this);
+    this.getTopMasCaros = this.getTopMasCaros.bind(this);
+    this.getTopPorValorTotal = this.getTopPorValorTotal.bind(this);
+    this.getExportToCSV = this.getExportToCSV.bind(this);
     if (!productoService) {
       throw new Error("Error requiere ServiceProducto");
     }
@@ -41,6 +44,8 @@ export class ProductoController {
   async create(req, res) {
     try {
       const dto = whitelistCreate(req.body);
+      const usuarioId = req.user.id;
+      const notaMovimiento = req.body.nota ?? null;
 
       // Presencia + tipos/rangos básicos
       if (!dto.nombre) return res.status(400).json({ ok: false, error: "PRODUCT_NAME_REQUIRED" });
@@ -51,7 +56,7 @@ export class ProductoController {
       if (!(dto.categoriaId === null || isIntMin(dto.categoriaId, 1)))
         return res.status(400).json({ ok: false, error: "PRODUCT_CATEGORY_INVALID" });
 
-      const { producto } = await this.serv.create(dto);
+      const { producto } = await this.serv.create(usuarioId, dto, notaMovimiento);
       return res.status(201).json({ ok: true, producto });
     } catch (err) {
       const status = mapDomainErrorToHttp(err);
@@ -61,9 +66,8 @@ export class ProductoController {
 
   async list(req, res) {
     try {
-      //satanizar
       const params = whitelistListParams(req.query);
-      //logica de negocio service
+
       const { items, meta } = await this.serv.list(params);
       return res.status(200).json({ ok: true, items, meta });
     } catch (err) {
@@ -74,6 +78,8 @@ export class ProductoController {
 
   async update(req, res) {
     try {
+      const usuarioId = req.user.id;
+      const notaMovimiento = req.body.nota ?? null;
       const id = Number(req.params?.id);
       if (!Number.isInteger(id) || id <= 0)
         return res.status(400).json({ ok: false, error: "INVALID_ID" });
@@ -85,7 +91,7 @@ export class ProductoController {
         categoriaId: req.body?.categoriaId,
       };
 
-      const out = await this.serv.patch(id, dto);
+      const out = await this.serv.patch(id, dto, usuarioId, notaMovimiento);
       if (out === null) return res.status(404).json({ ok: false, error: "NOT_FOUND" });
       if (out === false) return res.status(200).json({ ok: true, changed: false });
 
@@ -113,7 +119,7 @@ export class ProductoController {
   async remove(req, res) {
     try {
       const id = Number(req.params?.id);
-      // console.log("PATCH dto:", id); ojoo prueba postman
+
       if (!Number.isInteger(id) || id <= 0)
         return res.status(400).json({ ok: false, error: "INVALID_ID" });
       const result = await this.serv.remove(id);
@@ -122,6 +128,49 @@ export class ProductoController {
     } catch (err) {
       const status = mapDomainErrorToHttp(err);
       return res.status(status).json({ ok: false, error: err?.message ?? "INTERNAL_ERROR" });
+    }
+  }
+
+  async getTopMasCaros(req, res) {
+    try {
+      const limit = Number(req.query?.limit ?? 5);
+      if (!Number.isInteger(limit) || limit <= 0 || limit > 5) {
+        return res.status(400).json({ ok: false, error: "INVALID_PAYLOAD" });
+      }
+      const { items } = await this.serv.topMasCaros(limit);
+      return res.status(200).json({ ok: true, items });
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res.status(status).json({ ok: false, error: err?.message ?? "INTERNAL_ERROR" });
+    }
+  }
+
+  async getTopPorValorTotal(req, res) {
+    try {
+      const limit = Number(req.query?.limit ?? 5);
+      if (!Number.isInteger(limit) || limit <= 0 || limit > 5) {
+        return res.status(400).json({ ok: false, error: "INVALID_PAYLOAD" });
+      }
+      const { items } = await this.serv.topPorValorTotal(limit);
+
+      return res.status(200).json({ ok: true, items });
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res.status(status).json({ ok: false, error: err?.message ?? "INTERNAL_ERROR" });
+    }
+  }
+
+  async getExportToCSV(req, res) {
+    try {
+      const csv = await this.serv.exportToCSV();
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = `productos-${today}.csv`;
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send("\uFEFF" + csv);
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res.status(status).json({ ok: false, error: err?.message ?? "CSV_PRODUCT_ERROR" });
     }
   }
 }

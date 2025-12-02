@@ -2,6 +2,8 @@ export function mapDomainErrorToHttp(err) {
   if (err instanceof TypeError || err instanceof RangeError) return 400;
   switch (err?.message) {
     //auth-user
+    case "USER_IN_USE":
+      return 409;
     case "EMAIL_TAKEN":
       return 409;
     case "INVALID_CREDENTIALS":
@@ -22,9 +24,11 @@ export function mapDomainErrorToHttp(err) {
       return 409;
     case "CATEGORY_NOT_FOUND":
       return 422;
+    //movimiento
     case "PRODUCT_IN_USE":
       return 409;
-
+    case "MOV_EXPORT_REPO_UNAVAILABLE":
+      return 503;
     // categoría
     case "CATEGORY_DUPLICATE":
       return 409;

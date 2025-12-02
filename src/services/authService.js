@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 
 import { Usuario } from "../models/user.js";
-const EMAIL_REGEX = /^[^\s,@]+@[^\s,@]+\.[^\s,@]+$/;
+const EMAIL_REGEX = /^[^\s,@]+@[^\s,@]+(\.[^\s,@]+)+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
 export class AuthService {
   /**
@@ -40,7 +40,7 @@ export class AuthService {
       throw new Error("EMAIL_TAKEN");
     }
     if (!EMAIL_REGEX.test(email) || email.length > 30) {
-      throw new Error("EMAIL_INVALID");
+      throw new TypeError("EMAIL_INVALID");
     }
     const base = Usuario.fromRegisterJSON({
       nombre: String(dto.nombre).trim(),
