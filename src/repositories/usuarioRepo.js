@@ -21,7 +21,7 @@ export class UsuarioRepository {
   async listPublic({ limit = 10, offset = 0, orderBy = "created_at", orderDir = "DESC" } = {}) {
     const { col, dir } = normalizeOrderUsuario(orderBy, orderDir);
     const { L, O } = limitPag({ limit, offset });
-    const sql = `SELECT id_usuario, nombre, created_at, rol_id FROM usuarios ORDER BY ${col} ${dir} LIMIT ${L} OFFSET ${O}`;
+    const sql = `SELECT id_usuario, nombre, created_at, rol_id, avatar_url FROM usuarios ORDER BY ${col} ${dir} LIMIT ${L} OFFSET ${O}`;
 
     const [rows] = await this.pool.execute(sql);
     return rows;
@@ -34,7 +34,7 @@ export class UsuarioRepository {
     return rows;
   }
   async findById(id) {
-    const sql = `SELECT id_usuario, nombre, email, rol_id, created_at, updated_at
+    const sql = `SELECT id_usuario, nombre, email, rol_id, avatar_url, created_at, updated_at
     FROM usuarios WHERE id_usuario = ? LIMIT 1
     `;
 
@@ -76,6 +76,11 @@ export class UsuarioRepository {
     return res.affectedRows > 0;
   }
 
+  async updateAvatar(id, newAvatar) {
+    const sql = `UPDATE usuarios SET avatar_url = ? WHERE id_usuario = ? LIMIT 1`;
+    const [res] = await this.pool.execute(sql, [newAvatar, id]);
+    return res.affectedRows > 0;
+  }
   async remove(id) {
     const sql = `DELETE FROM usuarios WHERE id_usuario = ? LIMIT 1`;
 

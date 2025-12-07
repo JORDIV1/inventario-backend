@@ -1,7 +1,5 @@
 import { mapDomainErrorToHttp } from "../http/mapDomainErrorToHttp.js";
 
-
-
 function whitelistParams(query) {
   return {
     limit: Number(query.limit ?? 10),
@@ -31,6 +29,8 @@ export class UserController {
     this.updatedPartial = this.updatedPartial.bind(this);
     this.remove = this.remove.bind(this);
     this.listAdmin = this.listAdmin.bind(this);
+    this.updateAvatarFromR2 = this.updateAvatarFromR2.bind(this);
+    this.getAvatar = this.getAvatar.bind(this);
   }
 
   async create(req, res) {
@@ -108,6 +108,53 @@ export class UserController {
     } catch (err) {
       const status = mapDomainErrorToHttp(err);
       return res.status(status).json({ ok: false, error: "USERS_LIST_ADMIN_FAILED" });
+    }
+  }
+
+  async updateAvatarFromR2(req, res) {
+    try {
+      const userId = Number(req.user?.id);
+      const file = req.file;
+      if (!userId) {
+        return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+      }
+      const { avatarKey } = await this.user.updateAvatar({ userId, file });
+      return res.status(200).json({ ok: true, avatarKey: avatarKey });
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res
+        .status(status)
+        .json({ ok: false, error: err?.message ?? "USERS_AVATAR_UPDATE_FAILED" });
+    }
+  }
+
+  async getAvatar(req, res) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ ok: false, error: "INVALID_ID" });
+      }
+      const result = await this.user.getAvatarByUserId(id);
+      if (!result) {
+        return res.status(404).end();
+      }
+
+      const { stream, contentType, contentLength } = result;
+      if (contentType) {
+        res.setHeader("Content-Type", contentType);
+      }
+      if (contentLength) {
+        res.setHeader("Content-Length", String(contentLength));
+      }
+      // Cache + permitir que el frontend en otro dominio pueda usar la imagen
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      stream.pipe(res);
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res
+        .status(status)
+        .json({ ok: false, error: err?.message ?? "USERS_AVATAR_UNAVAILABLE" });
     }
   }
 }

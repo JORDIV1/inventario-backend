@@ -1,5 +1,3 @@
-
-
 /**
  * @param {import("../security/jwtService.js").JwtService} jwtService
  */

@@ -1,5 +1,6 @@
 import argon2 from "argon2";
 import { Usuario } from "../models/user.js";
+import { getAvatarFromR2, uploadAvatarToR2 } from "../r2/avatarStorage.js";
 const EMAIL_REGEX = /^[^\s,@]+@[^\s,@]+(\.[^\s,@]+)+$/;
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
 const ROLES = new Set([1, 2]);
@@ -156,6 +157,7 @@ export class UserService {
       nombre: r.nombre,
       rolId: r.rol_id,
       createdAt: r.created_at,
+      avatar: r.avatar_url,
     }));
     return {
       items,
@@ -182,5 +184,44 @@ export class UserService {
       items,
       meta: { total, limit, offset, orderBy, orderDir },
     };
+  }
+
+  async updateAvatar({ userId, file }) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error("INVALID_ID");
+    }
+    const currentRow = await this.repo.findById(userId);
+    if (!currentRow) {
+      throw new Error("USER_NOT_FOUND");
+    }
+    const objectKey = await uploadAvatarToR2({ userId, file });
+
+    let updated;
+    try {
+      updated = await this.repo.updateAvatar(userId, objectKey);
+    } catch (err) {
+      throw new Error("UPDATED_AVATAR_FAILED");
+    }
+
+    return {
+      avatarKey: objectKey,
+    };
+  }
+
+  async getAvatarByUserId(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new Error("INVALID_ID");
+    }
+    const currentRow = await this.repo.findById(userId);
+    if (!currentRow) {
+      throw new Error("USER_NOT_FOUND");
+    }
+    if (!currentRow.avatar_url) {
+      return null;
+    }
+    const objectKey = currentRow.avatar_url;
+
+    const { stream, contentType, contentLength } = await getAvatarFromR2({ objectKey });
+    return { stream, contentType, contentLength };
   }
 }
