@@ -142,22 +142,28 @@ export class UserService {
 
     return true;
   }
-  async listPublic(params = {}) {
+  async listPublic(userId, params = {}) {
     const limit = Number(params?.limit ?? 10);
     const offset = Number(params?.offset ?? 0);
     const orderBy = params?.orderBy ?? "created_at";
     const orderDir = params?.orderDir ?? "DESC";
-
-    const rows = await this.repo.listPublic({ limit, offset, orderBy, orderDir });
+    let rows;
+    try {
+      rows = await this.repo.listPublic(userId, { limit, offset, orderBy, orderDir });
+    } catch (err) {
+      console.log(err);
+    }
 
     const total = await this.repo.total();
 
     const items = rows.map((r) => ({
-      id: r.id_usuario,
+      id: r.id,
       nombre: r.nombre,
       rolId: r.rol_id,
       createdAt: r.created_at,
       avatar: r.avatar_url,
+      likedByMe: Boolean(r.likedByMe),
+      likesCount: Number(r.likesCount),
     }));
     return {
       items,
@@ -223,5 +229,21 @@ export class UserService {
 
     const { stream, contentType, contentLength } = await getAvatarFromR2({ objectKey });
     return { stream, contentType, contentLength };
+  }
+
+  async toggleLike({ userId, targetId }) {
+    try {
+      await this.repo.insertLike({ usuarioId: userId, objetivoId: targetId });
+      const likesCount = await this.repo.countLikesForUser({ objetivoId: targetId });
+      return { liked: true, likesCount };
+    } catch (err) {
+      if (err?.code === "ER_DUP_ENTRY") {
+        const removed = await this.repo.deleteLike({ usuarioId: userId, objetivoId: targetId });
+        const likesCount = await this.repo.countLikesForUser({ objetivoId: targetId });
+
+        return { liked: !removed ? true : false, likesCount };
+      }
+      throw new Error("USER_LIKE_FAILED");
+    }
   }
 }

@@ -22,7 +22,10 @@ router.post("/admin", guard, requireRole(ROLES.ADMIN), userController.create);
 router.patch("/admin/:id", guard, requireRole(ROLES.ADMIN), userController.updatedPartial);
 router.delete("/admin/:id", guard, requireRole(ROLES.ADMIN), userController.remove);
 //publicas
+
 router.get("/public", guard, userController.listPublic);
+router.post("/likes/toggle", guard, userController.toggleLike);
 router.post("/me/avatar", guard, upload.single("avatar"), userController.updateAvatarFromR2);
 router.get("/:id/avatar", guard, userController.getAvatar);
+
 export const usuarioRouter = router;

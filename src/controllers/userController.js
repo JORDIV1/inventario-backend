@@ -31,6 +31,7 @@ export class UserController {
     this.listAdmin = this.listAdmin.bind(this);
     this.updateAvatarFromR2 = this.updateAvatarFromR2.bind(this);
     this.getAvatar = this.getAvatar.bind(this);
+    this.toggleLike = this.toggleLike.bind(this);
   }
 
   async create(req, res) {
@@ -89,11 +90,14 @@ export class UserController {
   }
   async listPublic(req, res) {
     try {
+      const userId = Number(req.user?.id);
       const params = whitelistParams(req.query);
-      const { items, meta } = await this.user.listPublic(params);
+      const { items, meta } = await this.user.listPublic(userId, params);
 
       return res.status(200).json({ ok: true, items, meta });
     } catch (err) {
+     
+
       const status = mapDomainErrorToHttp(err);
       return res.status(status).json({ ok: false, error: "USERS_LIST_FAILED" });
     }
@@ -155,6 +159,26 @@ export class UserController {
       return res
         .status(status)
         .json({ ok: false, error: err?.message ?? "USERS_AVATAR_UNAVAILABLE" });
+    }
+  }
+  async toggleLike(req, res) {
+    try {
+      const userId = Number(req.user?.id);
+      if (!userId) {
+        return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+      }
+      const targetId = Number(req.body?.objetivoId);
+      if (!Number.isInteger(targetId) || targetId <= 0) {
+        return res.status(400).json({ ok: false, error: "INVALID_ID" });
+      }
+      const { liked, likesCount } = await this.user.toggleLike({
+        userId: userId,
+        targetId: targetId,
+      });
+      return res.status(200).json({ ok: true, liked, likesCount });
+    } catch (err) {
+      const status = mapDomainErrorToHttp(err);
+      return res.status(status).json({ ok: false, error: err?.message ?? "USER_LIKE_FAILED" });
     }
   }
 }

@@ -17,13 +17,56 @@ export class UsuarioRepository {
     const [res] = await this.pool.execute(sql, params);
     return res.insertId;
   }
+  async insertLike({ usuarioId, objetivoId }) {
+    const sql = `INSERT INTO usuario_likes (usuario_id, objetivo_id)
+    VALUES (?,?)
+    `;
+    const [result] = await this.pool.execute(sql, [usuarioId, objetivoId]);
+    return result.insertId;
+  }
 
-  async listPublic({ limit = 10, offset = 0, orderBy = "created_at", orderDir = "DESC" } = {}) {
+  async countLikesForUser({ objetivoId }) {
+    const sql = `SELECT COUNT(*) AS likesCount
+    FROM usuario_likes 
+    WHERE objetivo_id = ?
+    `;
+    const [rows] = await this.pool.execute(sql, [objetivoId]);
+    return Number(rows[0]?.likesCount ?? 0);
+  }
+  async deleteLike({ usuarioId, objetivoId }) {
+    const sql = `DELETE FROM usuario_likes WHERE usuario_id = ? AND objetivo_id = ?`;
+    const [res] = await this.pool.execute(sql, [usuarioId, objetivoId]);
+    return res.affectedRows > 0;
+  }
+  async listPublic(
+    currentUserId,
+    { limit = 10, offset = 0, orderBy = "created_at", orderDir = "DESC" } = {},
+  ) {
     const { col, dir } = normalizeOrderUsuario(orderBy, orderDir);
     const { L, O } = limitPag({ limit, offset });
-    const sql = `SELECT id_usuario, nombre, created_at, rol_id, avatar_url FROM usuarios ORDER BY ${col} ${dir} LIMIT ${L} OFFSET ${O}`;
+    const sql = ` SELECT 
+      u.id_usuario AS id,
+      u.nombre,
+      u.created_at,
+      u.rol_id,
+      u.avatar_url,
+      COALESCE(l.total_likes, 0) AS likesCount,
+      CASE 
+        WHEN ul.usuario_id IS NOT NULL THEN 1
+        ELSE 0
+      END AS likedByMe
+    FROM usuarios u
+    LEFT JOIN (
+      SELECT objetivo_id, COUNT(*) AS total_likes
+      FROM usuario_likes
+      GROUP BY objetivo_id
+    ) l ON l.objetivo_id = u.id_usuario
+    LEFT JOIN usuario_likes ul 
+      ON ul.usuario_id = ?
+     AND ul.objetivo_id = u.id_usuario
+    ORDER BY ${col} ${dir} LIMIT ${L} OFFSET ${O}`;
 
-    const [rows] = await this.pool.execute(sql);
+    const [rows] = await this.pool.execute(sql, [currentUserId]);
     return rows;
   }
   async listAdmin({ limit = 10, offset = 0, orderBy = "created_at", orderDir = "DESC" } = {}) {
